@@ -1,10 +1,14 @@
 package com.cyan.curioserver.service.impl;
 
+import com.cyan.curioserver.common.PageResult;
 import com.cyan.curioserver.entity.Document;
 import com.cyan.curioserver.entity.User;
 import com.cyan.curioserver.mapper.DocumentMapper;
 import com.cyan.curioserver.mapper.UserMapper;
 import com.cyan.curioserver.service.DocumentService;
+import com.cyan.curioserver.vo.DocumentVO;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -78,6 +82,27 @@ public class DocumentServiceImpl implements DocumentService {
             throw exception;
         }
         return document.getId();
+    }
+
+    @Override
+    public PageResult<DocumentVO> pageQuery(Integer page, Integer pageSize) {
+        if (page == null || page < 1) {
+            throw new IllegalArgumentException("页码必须大于等于1");
+        }
+        if (pageSize == null || pageSize < 1 || pageSize > 100) {
+            throw new IllegalArgumentException("每页条数必须在1到100之间");
+        }
+        // 当前阶段由后端固定测试用户
+        Long userId = 1L;
+
+        try {
+            PageHelper.startPage(page, pageSize);
+            Page<DocumentVO> result = documentMapper.pageQuery(userId);
+
+            return new PageResult<>(result.getTotal(), result.getResult());
+        } finally {
+            PageHelper.clearPage();
+        }
     }
 
     private String calculateFileHash(MultipartFile file) {
