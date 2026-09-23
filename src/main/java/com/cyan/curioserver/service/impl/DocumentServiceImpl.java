@@ -1,0 +1,145 @@
+package com.cyan.curioserver.service.impl;
+
+import com.cyan.curioserver.entity.Document;
+import com.cyan.curioserver.entity.User;
+import com.cyan.curioserver.mapper.DocumentMapper;
+import com.cyan.curioserver.mapper.UserMapper;
+import com.cyan.curioserver.service.DocumentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
+@Service
+public class DocumentServiceImpl implements DocumentService {
+
+    @Autowired
+    private UserMapper userMapper;
+    @Autowired
+    private DocumentMapper documentMapper;
+
+    @Value("${curio.storage.upload-dir}")
+    private String uploadDir;
+    @Override
+    public Long upload(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("请选择非空文件");
+        }
+
+        User user = userMapper.findById(1L);
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        // 到这里，说明文件非空，而且用户存在。
+        String originalFilename = file.getOriginalFilename();
+
+        if (originalFilename == null || originalFilename.isBlank()) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+        //判断文件是否存在
+        String fileHash = calculateFileHash(file);
+        Long duplicateId = documentMapper.findDuplicateId(user.getId(),originalFilename,fileHash);
+        if (duplicateId != null) {
+            throw new IllegalArgumentException("该资料已存在");
+        }
+        //处理重复名字加入后缀
+        String documentName = resolveAvailableName(user.getId(),originalFilename);
+        // 后面继续实现查重、保存文件、插入资料记录。
+        Document document = new Document();
+        document.setUserId(user.getId());
+        document.setName(documentName);
+        document.setSize(file.getSize());
+        document.setContentType(file.getContentType());
+        document.setFileHash(fileHash);
+
+        String storagePath = saveFile(file);
+        document.setStoragePath(storagePath);
+
+        try {
+            int rows = documentMapper.insert(document);
+            if (rows != 1) {
+                throw new IllegalStateException("资料保存失败");
+            }
+        }catch (RuntimeException exception){
+            try {
+                Files.deleteIfExists(Path.of(storagePath));
+            }catch (IOException ioException){
+                exception.addSuppressed(ioException);
+            }
+            throw exception;
+        }
+        return document.getId();
+    }
+
+    private String calculateFileHash(MultipartFile file) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            try (InputStream input = file.getInputStream()){
+                byte[] buffer = new byte[8192];
+                int length;
+
+                while ((length = input.read(buffer))!=-1){
+                    digest.update(buffer,0,length);
+                }
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (IOException exception) {
+            throw new IllegalStateException("读取文件失败", exception);
+        }catch (NoSuchAlgorithmException exception){
+            throw new IllegalStateException("无法使用SHA-256算法", exception);
+        }
+    }
+    private String resolveAvailableName(Long userId , String originalFilename) {
+        String baseName = originalFilename;
+        String extension = "";
+
+        //分离文件后缀
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if(dotIndex > 0){
+            baseName = originalFilename.substring(0, dotIndex);
+            extension = originalFilename.substring(dotIndex);
+        }
+        String candidateName = originalFilename;
+        int number = 1;
+
+        while (documentMapper.findIdByName(userId,candidateName)!= null){
+            candidateName = baseName + "(" + number + ")" + extension;
+            number++;
+        }
+        return candidateName;
+    }
+    private String saveFile(MultipartFile file) {
+        Path directory = Path.of(uploadDir).toAbsolutePath().normalize();
+
+        try{
+            //目录不存在就创建
+            Files.createDirectories(directory);
+            //由系统创建不重名的新名字
+            Path target = Files.createTempFile(directory,"document-",".bin");
+
+            try(InputStream input = file.getInputStream()){
+                Files.copy(input,target, StandardCopyOption.REPLACE_EXISTING);
+            }catch (IOException | RuntimeException exception){
+                //保存失败时，清理
+                try {
+                    Files.deleteIfExists(target);
+                }catch (IOException cleapupException){
+                    exception.addSuppressed(cleapupException);
+                }
+                throw exception;
+            }
+            return target.toString();
+        }catch (IOException exception){
+            throw new IllegalStateException("保存文件失败", exception);
+        }
+    }
+}

@@ -3,11 +3,9 @@
 > 一个 Agent 读得懂的学习资料库 —— 服务于个人学习、团队协作与课堂。
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Java](https://img.shields.io/badge/Java-17-orange.svg)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)
+![Java](https://img.shields.io/badge/Java-21-orange.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-M1%20in%20progress-yellow.svg)
-
-<!-- ↑ 徽章里的 Java / Spring Boot 版本，等你把骨架建好后按实际改 -->
 
 ---
 
@@ -29,13 +27,13 @@ Curio 是一个学习资料库服务。
 
 | 层       | 选型                           |
 |----------|--------------------------------|
-| 语言     | Java 21                        |
-| 框架     | Spring Boot 4.x                |
-| 持久层   | MyBatis                        |
-| 数据库   | MySQL 8                        |
-| 接口文档 | springdoc-openapi (Swagger UI) |
-| 缓存     | Redis（M3 引入）               |
-| AI       | Spring AI（M2 引入）           |
+| 语言     | Java 21                           |
+| 框架     | Spring Boot 4.1.1                 |
+| 持久层   | MyBatis（原生 XML 映射）          |
+| 数据库   | MySQL 8                           |
+| 接口文档 | springdoc-openapi 3.1.1 (Swagger) |
+| 缓存     | Redis（M3 引入）                  |
+| AI       | LLM 接入（M2 引入）               |
 
 ---
 
@@ -43,7 +41,7 @@ Curio 是一个学习资料库服务。
 
 ```text
 curio-server/
-├── src/main/java/com/cyan/curio-server/
+├── src/main/java/com/cyan/curioserver/
 │   ├── controller/       # 接口层
 │   ├── service/          # 业务逻辑
 │   ├── mapper/           # 数据访问
@@ -57,8 +55,6 @@ curio-server/
 │   └── mapper/                   # MyBatis XML
 └── sql/                          # 建表脚本
 ```
-
-<!-- 包名 com.cyanyuzi.curio 是按你的 GitHub 名起的，想换随便换，改完记得同步这里 -->
 
 ---
 
