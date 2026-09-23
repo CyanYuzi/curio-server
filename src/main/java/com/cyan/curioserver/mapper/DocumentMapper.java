@@ -35,4 +35,7 @@ public interface DocumentMapper {
             "where user_id = #{userId} AND deleted = 0 " +
             "ORDER BY created_at DESC , id DESC")
     Page<DocumentVO> pageQuery(@Param("userId") Long userId);
+
+    @Select("SELECT id , name ,size,storage_path AS storagePath from curio.document where id = #{id} AND user_id = #{userId} AND deleted = 0" )
+    Document findAvailableById(@Param("id") Long id, @Param("userId") Long userId);
 }

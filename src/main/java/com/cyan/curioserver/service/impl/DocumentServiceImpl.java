@@ -1,8 +1,10 @@
 package com.cyan.curioserver.service.impl;
 
 import com.cyan.curioserver.common.PageResult;
+import com.cyan.curioserver.dto.DownloadFile;
 import com.cyan.curioserver.entity.Document;
 import com.cyan.curioserver.entity.User;
+import com.cyan.curioserver.exception.DocumentNotFoundException;
 import com.cyan.curioserver.mapper.DocumentMapper;
 import com.cyan.curioserver.mapper.UserMapper;
 import com.cyan.curioserver.service.DocumentService;
@@ -75,7 +77,7 @@ public class DocumentServiceImpl implements DocumentService {
             }
         }catch (RuntimeException exception){
             try {
-                Files.deleteIfExists(Path.of(storagePath));
+                Files.deleteIfExists(resolveStoragePath(storagePath));
             }catch (IOException ioException){
                 exception.addSuppressed(ioException);
             }
@@ -103,6 +105,24 @@ public class DocumentServiceImpl implements DocumentService {
         } finally {
             PageHelper.clearPage();
         }
+    }
+
+    @Override
+    public DownloadFile prepareDownload(Long id) {
+        if(id == null || id <= 0 ){
+            throw new IllegalArgumentException("资料id错误");
+        }
+        Document document = documentMapper.findAvailableById(id , 1L);
+        if(document == null){
+            throw new DocumentNotFoundException();
+        }
+        Path path = resolveStoragePath(document.getStoragePath());
+
+        if(!Files.isRegularFile(path) || !Files.isReadable(path)){
+            throw new IllegalStateException("资料文件暂不可用");
+        }
+
+        return new DownloadFile(document.getName(),path);
     }
 
     private String calculateFileHash(MultipartFile file) {
@@ -157,14 +177,26 @@ public class DocumentServiceImpl implements DocumentService {
                 //保存失败时，清理
                 try {
                     Files.deleteIfExists(target);
-                }catch (IOException cleapupException){
-                    exception.addSuppressed(cleapupException);
+                }catch (IOException cleanupException){
+                    exception.addSuppressed(cleanupException);
                 }
                 throw exception;
             }
-            return target.toString();
+
+            return target.getFileName().toString();
         }catch (IOException exception){
             throw new IllegalStateException("保存文件失败", exception);
         }
+    }
+    private Path resolveStoragePath(String storagePath){
+        Path root = Path.of(uploadDir).toAbsolutePath().normalize();
+        Path stored = Path.of(storagePath);
+
+        //兼容已有的
+        Path resolved = stored.isAbsolute() ? stored.normalize() : root.resolve(stored).normalize();
+        if (!resolved.startsWith(root)||resolved.equals(root)) {
+            throw new IllegalStateException("资料存储地址无效");
+        }
+        return resolved;
     }
 }
