@@ -11,4 +11,6 @@ public interface DocumentService {
     PageResult<DocumentVO> pageQuery(Integer page, Integer pageSize);
 
     DownloadFile prepareDownload(Long id);
+
+    void delete(Long id);
 }

@@ -60,4 +60,10 @@ public class DocumentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,disposition.toString())
                 .body(resource);
     }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable("id") Long id){
+        documentService.delete(id);
+        return Result.success();
+    }
 }

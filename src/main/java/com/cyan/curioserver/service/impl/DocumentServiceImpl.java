@@ -125,6 +125,14 @@ public class DocumentServiceImpl implements DocumentService {
         return new DownloadFile(document.getName(),path);
     }
 
+    @Override
+    public void delete(Long id) {
+        if(id == null || id <= 0 ){
+            throw new IllegalArgumentException("错误的id");
+        }
+        documentMapper.softDelete(id, 1L);
+    }
+
     private String calculateFileHash(MultipartFile file) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
