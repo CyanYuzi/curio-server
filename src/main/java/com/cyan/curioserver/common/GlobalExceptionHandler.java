@@ -22,10 +22,11 @@ public class GlobalExceptionHandler {
             DocumentNotFoundException exception){
         return Result.error(exception.getMessage());
     }
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleIllegalState(
             IllegalStateException exception){
         log.error("资料处理失败",exception);
         return Result.error("资料处理失败，请稍后重试");
     }
 }
-
