@@ -1,6 +1,8 @@
 package com.cyan.curioserver.common;
 
 import com.cyan.curioserver.exception.DocumentNotFoundException;
+import com.cyan.curioserver.exception.LoginFailedException;
+import com.cyan.curioserver.exception.NotLoggedInException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,5 +30,15 @@ public class GlobalExceptionHandler {
             IllegalStateException exception){
         log.error("资料处理失败",exception);
         return Result.error("资料处理失败，请稍后重试");
+    }
+    @ExceptionHandler(LoginFailedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Result<Void> handleLoginFailed(LoginFailedException exception){
+        return Result.error(exception.getMessage());
+    }
+    @ExceptionHandler(NotLoggedInException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Result<Void> handleNotLoggedIn(NotLoggedInException exception){
+        return Result.error(exception.getMessage());
     }
 }

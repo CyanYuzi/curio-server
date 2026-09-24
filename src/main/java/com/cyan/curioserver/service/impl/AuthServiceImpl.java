@@ -1,9 +1,12 @@
 package com.cyan.curioserver.service.impl;
 
+import com.cyan.curioserver.dto.LoginDTO;
 import com.cyan.curioserver.dto.RegisterDTO;
 import com.cyan.curioserver.entity.User;
+import com.cyan.curioserver.exception.LoginFailedException;
 import com.cyan.curioserver.mapper.UserMapper;
 import com.cyan.curioserver.service.AuthService;
+import com.cyan.curioserver.vo.LoginUserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,5 +52,30 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("用户名已被使用");
         }
         return user.getId();
+    }
+
+    @Override
+    public LoginUserVO login(LoginDTO loginDTO) {
+        if(loginDTO == null){
+            throw new LoginFailedException();
+        }
+        String username = loginDTO.getUsername();
+        String password = loginDTO.getPassword();
+
+        if (username == null || !username.matches("[a-zA-Z0-9_]{3,30}")
+                || password == null || password.isBlank()
+                || password.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new LoginFailedException();
+        }
+        User user = userMapper.findByUsername(username);
+        if (user == null || user.getPasswordHash() == null
+                || user.getPasswordHash().isBlank()) {
+            throw new LoginFailedException();
+        }
+        boolean matched = passwordEncoder.matches(password, user.getPasswordHash());
+        if(!matched){
+            throw new LoginFailedException();
+        }
+        return new LoginUserVO(user.getUsername(),user.getId());
     }
 }
