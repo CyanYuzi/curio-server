@@ -36,12 +36,12 @@ public class DocumentServiceImpl implements DocumentService {
     @Value("${curio.storage.upload-dir}")
     private String uploadDir;
     @Override
-    public Long upload(MultipartFile file) {
+    public Long upload(MultipartFile file,Long userId) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("请选择非空文件");
         }
 
-        User user = userMapper.findById(1L);
+        User user = userMapper.findById(userId);
         if (user == null) {
             throw new IllegalArgumentException("用户不存在");
         }
@@ -87,16 +87,13 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public PageResult<DocumentVO> pageQuery(Integer page, Integer pageSize) {
+    public PageResult<DocumentVO> pageQuery(Integer page, Integer pageSize,Long userId) {
         if (page == null || page < 1) {
             throw new IllegalArgumentException("页码必须大于等于1");
         }
         if (pageSize == null || pageSize < 1 || pageSize > 100) {
             throw new IllegalArgumentException("每页条数必须在1到100之间");
         }
-        // 当前阶段由后端固定测试用户
-        Long userId = 1L;
-
         try {
             PageHelper.startPage(page, pageSize);
             Page<DocumentVO> result = documentMapper.pageQuery(userId);
@@ -108,11 +105,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public DownloadFile prepareDownload(Long id) {
+    public DownloadFile prepareDownload(Long id ,Long userId) {
         if(id == null || id <= 0 ){
             throw new IllegalArgumentException("资料id错误");
         }
-        Document document = documentMapper.findAvailableById(id , 1L);
+        Document document = documentMapper.findAvailableById(id , userId);
         if(document == null){
             throw new DocumentNotFoundException();
         }
@@ -126,11 +123,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(Long id , Long userId) {
         if(id == null || id <= 0 ){
             throw new IllegalArgumentException("错误的id");
         }
-        documentMapper.softDelete(id, 1L);
+        documentMapper.softDelete(id, userId);
     }
 
     private String calculateFileHash(MultipartFile file) {

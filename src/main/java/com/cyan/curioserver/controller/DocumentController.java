@@ -35,21 +35,23 @@ public class DocumentController {
      */
     @PostMapping
     public Result<Long> upload(
+            @RequestAttribute("currentUserId") Long userId,
             @RequestParam(value = "file",required = false) MultipartFile file) {
-        Long documentId = documentService.upload(file);
+        Long documentId = documentService.upload(file,userId);
         return Result.success(documentId);
     }
 
     @GetMapping
     public Result<PageResult<DocumentVO>> pageQuery(
+            @RequestAttribute("currentUserId") Long userId,
             @RequestParam(value = "page", defaultValue = "1")Integer page,
             @RequestParam(value = "pageSize", defaultValue = "10")Integer pageSize) {
-        PageResult<DocumentVO> result = documentService.pageQuery(page, pageSize);
+        PageResult<DocumentVO> result = documentService.pageQuery(page, pageSize,userId);
         return Result.success(result);
     }
     @GetMapping("/{id}/download")
-    public ResponseEntity<Resource> download(@PathVariable("id") Long id){
-        DownloadFile downloadFile = documentService.prepareDownload(id);
+    public ResponseEntity<Resource> download(@PathVariable("id") Long id,@RequestAttribute("currentUserId") Long userId){
+        DownloadFile downloadFile = documentService.prepareDownload(id, userId);
 
         Resource resource = new FileSystemResource(downloadFile.getPath());
 
@@ -62,8 +64,8 @@ public class DocumentController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable("id") Long id){
-        documentService.delete(id);
+    public Result<Void> delete(@PathVariable("id") Long id,@RequestAttribute("currentUserId") Long userId){
+        documentService.delete(id , userId);
         return Result.success();
     }
 }
